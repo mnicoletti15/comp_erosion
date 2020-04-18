@@ -1,3 +1,0 @@
-/Users/mnicoletti/18.677/project/simulations/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/mnicoletti/18.677/project/simulations/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/mnicoletti/18.677/project/simulations/cmake-build-debug/CMakeFiles/simulations.dir
