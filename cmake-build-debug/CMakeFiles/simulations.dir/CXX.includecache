@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/mnicoletti/18.677/project/simulations/Graph.cpp
+Graph.h
+/Users/mnicoletti/18.677/project/simulations/Graph.h
+chrono
+-
+iostream
+-
+fstream
+-
+
+/Users/mnicoletti/18.677/project/simulations/Graph.h
+random
+-
+vector
+-
+complex
+-
+
