@@ -21,6 +21,9 @@ public:
     int X;
     int Y;
 
+    // this is for testing purposes
+    int k;
+
     int RED = 1;
     int BLUE = 0;
 
@@ -31,6 +34,7 @@ public:
     int bottomRedY;  // the lowest y coordinate of red
 
     vector<complex<double>> M;  // the martingale
+    vector<complex<double>> Mvals;  // // the value of M_{y0.N^2} for each sample run (yet to determine y0)
 
     vector<int> numRed;   // the number of Red for every y.
     vector<int> numBlue;  // the number of Blue for every y.
@@ -42,7 +46,7 @@ public:
     // E[h[0])]*(h[i] - E[h[i]])], where h[i] is the
     // height of the interface at x = i.
 
-    CylinderGraph(int N, int M);
+    CylinderGraph(int N, int M, int k);
 
     void initializeGraph();
 

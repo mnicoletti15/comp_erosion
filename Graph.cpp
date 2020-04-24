@@ -20,9 +20,10 @@ using namespace std;
 // assumes X is power of 2
 // assumes Y is power of 2
 
-CylinderGraph::CylinderGraph(int X, int Y) {
+CylinderGraph::CylinderGraph(int X, int Y, int k) {
     CylinderGraph::X = X;
     CylinderGraph::Y = Y;
+    CylinderGraph::k = k;
     CylinderGraph::topBlueY = Y - 1;
     CylinderGraph::bottomRedY = 0;
 }
@@ -57,10 +58,11 @@ void CylinderGraph::initializeGraph() {
 
     CylinderGraph::topBlueY = Y/2 - 1;
     CylinderGraph::bottomRedY = Y/2;
-
     for(int y = 0; y < Y; y++) {
         for (int x = 0; x < X; x++) {
-            if(y >= Y/2){ setColor(x, y, RED); }
+            if(y >= Y/2){
+                setColor(x, y, RED);
+            }
         }
     }
 
@@ -170,7 +172,8 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     const std::complex<double> I(0, 1);
     double N = (double) X;
 
-    int k = 25;
+
+
     double q = acosh(2 - cos(2 * pi * k / X));
 
 
@@ -185,13 +188,31 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     int x;
     std::vector<int> bdest, rdest;  // TODO make point
     int err;
-    complex<double> Mt;
+
+    complex<double> Mt = 0;
 
 
-    // initialize martingale
-    M.push_back(0);
+    // initialize martingale -- assumes we start at limit shape
+    for(int y = 0; y < Y/2; y++) {
+        for (int x = 0; x < X; x++) {
+
+            Mt = Mt + exp(I * (2 * pi * x * k) / N) * exp(q * (y - Y / 2)) / ((double) X);
+
+        }
+    }
+
+//    M.push_back(0);
 
     for (int sample = 0; sample < num_samples; sample++) {
+
+
+//        // re-initialize graph
+//        initializeGraph();
+
+
+//        // initialize martingale
+//        complex<double> Mt = 0;
+
         std::cout<<"sample "<<sample<<"..."<<std::endl;
         for (int i = 0; i < interval; i++) {
 
@@ -214,8 +235,7 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
                 break;
             }
 
-            // update martingale
-            Mt = M[sample * interval + i];
+            // update martingale's current value
 
             Mt = Mt + exp(I * (2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2)) / ((double) X)-
                           exp(I * (2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) X);
@@ -225,20 +245,27 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
             if (std::abs(imag(Mt)) < 0.0001)
                 Mt.imag(0);
 
-            M.emplace_back( Mt );
+            // Add Mt to the martingale's history
+
+            // M.emplace_back( Mt );
 
             setTopBlueY();
             setBottomRedY();
         }
+
+        // add final value of martingale to list of samples
+        Mvals.emplace_back( Mt );
+
+
         std::cout<<"done."<<std::endl;
 
         // printDensityGraph(32);
 
-        fluctuations.push_back(h(0));
-
-        for (int x = 0; x < X; x++) {
-            correlations[x] += (h(x) - Y / 2.0) * (h(0) - Y / 2.0) / num_samples;
-        }
+//        fluctuations.push_back(h(0));
+//
+//        for (int x = 0; x < X; x++) {
+//            correlations[x] += (h(x) - Y / 2.0) * (h(0) - Y / 2.0) / num_samples;
+//        }
     }
 }
 

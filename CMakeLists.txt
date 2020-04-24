@@ -3,4 +3,4 @@ project(simulations)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(simulations main.cpp Graph.cpp)
+add_executable(simulations main.cpp Graph.cpp IDLA.cpp)
