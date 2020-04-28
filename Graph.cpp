@@ -20,12 +20,13 @@ using namespace std;
 // assumes X is power of 2
 // assumes Y is power of 2
 
-CylinderGraph::CylinderGraph(int X, int Y, int k) {
+CylinderGraph::CylinderGraph(int X, int Y, int k, int T0) {
     CylinderGraph::X = X;
     CylinderGraph::Y = Y;
     CylinderGraph::k = k;
     CylinderGraph::topBlueY = Y - 1;
     CylinderGraph::bottomRedY = 0;
+    CylinderGraph::T0 = T0;
 }
 
 void CylinderGraph::initializeGraph() {
@@ -173,8 +174,8 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     double N = (double) X;
 
 
-
     double q = acosh(2 - cos(2 * pi * k / X));
+
 
 
     std::random_device rd;
@@ -189,31 +190,42 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     std::vector<int> bdest, rdest;  // TODO make point
     int err;
 
+
+    //current value of M -- assumes we start at limit shape
     complex<double> Mt = 0;
+    complex<double> mtemp;
 
+    //The martingale weighted by e^t -- should converge to e^t x_t, x_t o.u. process
+    complex<double> Yt = 0;
+    complex<double> ytemp = 0;
 
-    // initialize martingale -- assumes we start at limit shape
-    for(int y = 0; y < Y/2; y++) {
-        for (int x = 0; x < X; x++) {
+    //current value of Dphi
+    complex<double> Dphi = 0;
+    complex<double> difftemp;
 
-            Mt = Mt + exp(I * (2 * pi * x * k) / N) * exp(q * (y - Y / 2)) / ((double) X);
+    //quadratic variation of M, Dphi respectively
+    double Q = 0;
+    double phiQ = 0;
+    double YQt = 0;
+    double diff4 = 0;
 
-        }
-    }
+    //time
+    int T = 0;
 
-//    M.push_back(0);
 
     for (int sample = 0; sample < num_samples; sample++) {
 
+//      this is just temporary -- only for many samples of same time
+        // re-initialize graph
+        initializeGraph();
 
-//        // re-initialize graph
-//        initializeGraph();
+        // initialize martingale
+        complex<double> Mt = 0;
 
-
-//        // initialize martingale
-//        complex<double> Mt = 0;
+        complex<double> Dphi = 0;
 
         std::cout<<"sample "<<sample<<"..."<<std::endl;
+
         for (int i = 0; i < interval; i++) {
 
             // bottom
@@ -237,24 +249,75 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
 
             // update martingale's current value
 
-            Mt = Mt + exp(I * (2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2)) / ((double) X)-
-                          exp(I * (2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) X);
+//            ytemp = Yt;
+//
+//            T = i + sample * interval;
+//
+//            Yt = Yt + (cos((2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2))/ ((double) N)-
+//                          cos((2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) N))
+//                            * exp( q * (T/N - T0/N) );
+//            //quad var of Y
+//            YQt += abs(Yt - ytemp) * abs(Yt - ytemp);
 
-            if (std::abs(real(Mt)) < 0.0001)
-                Mt.real(0);
-            if (std::abs(imag(Mt)) < 0.0001)
-                Mt.imag(0);
 
-            // Add Mt to the martingale's history
+            mtemp = Mt;
 
-            // M.emplace_back( Mt );
+
+            Mt = Mt + (cos((2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2))/ ((double) N)-
+                       cos((2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) N));
+
+//            Q += abs(Mt - mtemp) * abs(Mt - mtemp);
+//
+//            // temporary just for testing
+//            diff4 += abs(Mt - mtemp) * abs(Mt - mtemp) * abs(Mt - mtemp) * abs(Mt - mtemp);
+//
+//
+            difftemp = Dphi;
+
+            // Update the value of Dphi, add new value to list
+
+            Dphi = Dphi + cos((2 * pi * bdest[0] * k) / N) / ((double) N) -
+                   cos((2 * pi * rdest[0] * k) / N)  / ((double) N);
+//
+//
+//
+//
+////            // temporary for testing
+////            if (sample == num_samples - 1) {
+////
+////            }
+//
+//
+//
+//            // update quad variation for Dphi
+//            phiQ += abs(Dphi - difftemp) * abs(Dphi - difftemp);
+
+
+
+
+
 
             setTopBlueY();
             setBottomRedY();
         }
 
-        // add final value of martingale to list of samples
-        Mvals.emplace_back( Mt );
+
+
+//        M.emplace_back( Mt );
+
+//        MQ.emplace_back( Q );
+//
+//        YQ.emplace_back(YQt);
+//
+//        DphiQ.emplace_back( phiQ );
+//
+//        Ylist.emplace_back( Yt );
+//
+//         temporarily using the following two lists
+//          not for trajectory, but for
+//         independent samples of value at fixed time
+        Dphilist.push_back(Dphi);
+        M.emplace_back( Mt );
 
 
         std::cout<<"done."<<std::endl;
@@ -267,6 +330,7 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
 //            correlations[x] += (h(x) - Y / 2.0) * (h(0) - Y / 2.0) / num_samples;
 //        }
     }
+    cout << diff4 << endl;
 }
 
 int CylinderGraph::h(int x) {

@@ -24,6 +24,9 @@ public:
     // this is for testing purposes
     int k;
 
+    // The time at which we want approximately measure (D, phi) at
+    int T0;
+
     int RED = 1;
     int BLUE = 0;
 
@@ -34,7 +37,12 @@ public:
     int bottomRedY;  // the lowest y coordinate of red
 
     vector<complex<double>> M;  // the martingale
-    vector<complex<double>> Mvals;  // // the value of M_{y0.N^2} for each sample run (yet to determine y0)
+    vector<double> MQ; // values of |M(t+1) - Mt|^2
+    vector<complex<double>> Ylist;  // // the value of e^(2 pi k/N (T - T0)/N)M(T)
+    vector<double> YQ; // values of |Y(t+1) - Yt|^2
+    vector<complex<double>> Dphilist; // trajectory of Dphi over time
+    vector<double> DphiQ; // |Dphi(t+1) - Dphi(t)|^2
+
 
     vector<int> numRed;   // the number of Red for every y.
     vector<int> numBlue;  // the number of Blue for every y.
@@ -46,7 +54,7 @@ public:
     // E[h[0])]*(h[i] - E[h[i]])], where h[i] is the
     // height of the interface at x = i.
 
-    CylinderGraph(int N, int M, int k);
+    CylinderGraph(int N, int M, int k, int T0);
 
     void initializeGraph();
 
