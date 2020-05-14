@@ -31,7 +31,7 @@ CylinderGraph::CylinderGraph(int X, int Y, int k, int T0) {
 
 void CylinderGraph::initializeGraph() {
 
-
+    const double pi = std::acos(-1);
 
     graph = vector<int>(X * Y, BLUE);
     numRed = vector<int>(Y, 0);
@@ -55,17 +55,30 @@ void CylinderGraph::initializeGraph() {
 
     */
 
-  // start with limit shape
+//   start with limit shape
 
     CylinderGraph::topBlueY = Y/2 - 1;
     CylinderGraph::bottomRedY = Y/2;
     for(int y = 0; y < Y; y++) {
         for (int x = 0; x < X; x++) {
-            if(y >= Y/2){
+            if (y >= Y/2) {
                 setColor(x, y, RED);
             }
         }
     }
+
+//    // start with sine wave
+//    CylinderGraph::topBlueY = Y/2 - 1;
+//    CylinderGraph::bottomRedY = Y/2;
+//    for(int y = 0; y < Y; y++) {
+//        for (int x = 0; x < X; x++) {
+//            if (y >= Y/2 + 3 * cos(2 * pi * k * x / X)) {
+//                setColor(x, y, RED);
+//            }
+//        }
+//    }
+
+
 
     setTopBlueY();
     setBottomRedY();
@@ -174,9 +187,15 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     double N = (double) X;
 
 
-    double q = acosh(2 - cos(2 * pi * k / X));
+    double q = N *  acosh(2 - cos(2 * pi * k / X));
 
+    const double Ablue = exp(q/2)/(exp(q/2) + exp(((-1 - N/2) * q)/N));
+    const double Bblue = 1 - exp(q/2)/(exp(q/2) + exp(((-1 - N/2) * q)/N));
 
+    const double Ared = 1/(1 + exp(q/2 + ((-1 + N/2) * q)/N));
+    const double Bred = 1 - 1/(1 + exp(q/2 + ((-1 + N/2) * q)/N));
+
+    const double lambda = ((-1 + exp(2 * pi * k)) * 2 * pi * k)/(1 + exp(2 * pi * k));
 
     std::random_device rd;
     std::mt19937 mt(rd());
@@ -191,22 +210,40 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
     int err;
 
 
-    //current value of M -- assumes we start at limit shape
-    complex<double> Mt = 0;
+    //current value of M
+//    complex<double> Mt = 0;
     complex<double> mtemp;
 
     //The martingale weighted by e^t -- should converge to e^t x_t, x_t o.u. process
-    complex<double> Yt = 0;
+//    complex<double> Yt = 0;
     complex<double> ytemp = 0;
 
     //current value of Dphi
     complex<double> Dphi = 0;
     complex<double> difftemp;
 
+//    // not starting at limit shape
+//    for(int y = 0; y < Y; y++) {
+//        for (int x = 0; x < X; x++) {
+//            if (getColor(x, y) == BLUE) {
+////                Mt += cos((2 * pi * x * k) / N) * exp(q * (y - Y / 2))/ N ;
+//                Mt += cos((2 * pi * x * k) / N) * cosh(q * (y - Y / 2))/ N ;
+//                if (y >= Y/2) {
+//                    Dphi += cos((2 * pi * x * k) / N) / N;
+//                }
+//            } else if (getColor(x, y) == RED and y < Y /2) {
+//                Dphi -= cos((2 * pi * x * k) / N) / N;
+//            }
+//        }
+//    }
+
+
+
+
     //quadratic variation of M, Dphi respectively
-    double Q = 0;
-    double phiQ = 0;
-    double YQt = 0;
+//    double Q = 0;
+//    double phiQ = 0;
+//    double YQt = 0;
     double diff4 = 0;
 
     //time
@@ -218,13 +255,29 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
 //      this is just temporary -- only for many samples of same time
         // re-initialize graph
         initializeGraph();
+//
+//        // initialize martingale
+//        complex<double> Mt = 0;
+//        // not starting at limit shape
+//        for(int y = 0; y < Y; y++) {
+//            for (int x = 0; x < X; x++) {
+//                if (getColor(x, y) == BLUE) {
+//                    Mt += cos((2 * pi * x * k) / N) * exp(q * (y - Y / 2))/ N ;
+//                }
+//            }
+//        }
+//        cout << Mt << endl;
 
-        // initialize martingale
+//
         complex<double> Mt = 0;
-
+        double Q = 0;
         complex<double> Dphi = 0;
+        double phiQ = 0;
+        complex<double> Yt = 0;
+        double YQt = 0;
 
         std::cout<<"sample "<<sample<<"..."<<std::endl;
+
 
         for (int i = 0; i < interval; i++) {
 
@@ -247,27 +300,47 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
                 break;
             }
 
-            // update martingale's current value
 
-//            ytemp = Yt;
+
+
+//          Y(t+1) - Y(t) = \frac{-1}{1 + e^{q_k}} e^{2 \pi i k X / N}(-e^{q_k} \exp(q_k Y / N) - \exp(-q_k Y / N))
+//                 - \frac{-1}{1 + e^{-q_k}} e^{2 \pi i k X / N}(-e^{-q_k} \exp(q_k Y / N) - \exp(-q_k Y / N))
+//          Fix boundary condition so it isn't for shifted half integer lattice
+
+
+
+            ytemp = Yt;
+
+            T = i;
+
+
+
+            Yt = Yt +
+                 (    cos((2 * pi * bdest[0] * k) / N) * (Ablue * exp(q * (bdest[1] - Y / 2) / N)
+                                                          + Bblue * exp(-q * (bdest[1] - Y / 2) / N) )
+                      + cos(2 * pi * rdest[0] * k / N) *
+                        (Ared * exp(q * (rdest[1] - Y / 2) / N) + Bred * exp(-q * (rdest[1] - Y / 2) / N ))  )
+                 * exp(2 * lambda * (T - T0) / (N*N)) / N;
+
+            //quad var of Y
+            YQt += abs(Yt - ytemp) * abs(Yt - ytemp);
+
+
+            mtemp = Mt * exp(2 * lambda * (T-1 - T0) / (N*N));
 //
-//            T = i + sample * interval;
 //
-//            Yt = Yt + (cos((2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2))/ ((double) N)-
-//                          cos((2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) N))
-//                            * exp( q * (T/N - T0/N) );
-//            //quad var of Y
-//            YQt += abs(Yt - ytemp) * abs(Yt - ytemp);
+            Mt = Mt + ( cos((2 * pi * bdest[0] * k) / N) -
+                       cos((2 * pi * rdest[0] * k) / N) ) / N;
 
 
-            mtemp = Mt;
 
-
-            Mt = Mt + (cos((2 * pi * bdest[0] * k) / N) * exp(q * (bdest[1] - Y / 2))/ ((double) N)-
-                       cos((2 * pi * rdest[0] * k) / N) * exp(q * (rdest[1] - Y / 2)) / ((double) N));
-
-//            Q += abs(Mt - mtemp) * abs(Mt - mtemp);
 //
+            if (T == 4 * 256) {
+                M.emplace_back( Mt );
+            }
+//
+            Q += abs(Mt * exp(2 * lambda * (T - T0) / (N*N)) - mtemp) * abs(Mt * exp(2 * lambda * (T - T0) / (N*N)) - mtemp);
+
 //            // temporary just for testing
 //            diff4 += abs(Mt - mtemp) * abs(Mt - mtemp) * abs(Mt - mtemp) * abs(Mt - mtemp);
 //
@@ -276,21 +349,12 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
 
             // Update the value of Dphi, add new value to list
 
-            Dphi = Dphi + cos((2 * pi * bdest[0] * k) / N) / ((double) N) -
-                   cos((2 * pi * rdest[0] * k) / N)  / ((double) N);
-//
-//
-//
-//
-////            // temporary for testing
-////            if (sample == num_samples - 1) {
-////
-////            }
-//
-//
-//
+            Dphi = Dphi + cos((2 * pi * bdest[0] * k) / N) / N -
+                   cos((2 * pi * rdest[0] * k) / N)  / N;
+
+
 //            // update quad variation for Dphi
-//            phiQ += abs(Dphi - difftemp) * abs(Dphi - difftemp);
+            phiQ += abs(Dphi - difftemp) * abs(Dphi - difftemp);
 
 
 
@@ -302,22 +366,26 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
         }
 
 
+        Dphilist.push_back(Dphi);
+        DphiQ.emplace_back( phiQ );
+
+        Ylist.emplace_back( Yt );
+        YQ.emplace_back(YQt);
 
 //        M.emplace_back( Mt );
+        MQ.emplace_back( Q );
+//
 
-//        MQ.emplace_back( Q );
 //
-//        YQ.emplace_back(YQt);
 //
-//        DphiQ.emplace_back( phiQ );
 //
-//        Ylist.emplace_back( Yt );
+
 //
 //         temporarily using the following two lists
 //          not for trajectory, but for
 //         independent samples of value at fixed time
-        Dphilist.push_back(Dphi);
-        M.emplace_back( Mt );
+
+
 
 
         std::cout<<"done."<<std::endl;
