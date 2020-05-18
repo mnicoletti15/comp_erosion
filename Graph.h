@@ -36,6 +36,7 @@ public:
     int topBlueY;    // The highest y coordinate of blue
     int bottomRedY;  // the lowest y coordinate of red
 
+
     vector<complex<double>> M;  // the martingale
     vector<double> MQ; // values of |M(t+1) - Mt|^2
     vector<complex<double>> Ylist;  // // the value of e^(2 pi k/N (T - T0)/N)M(T)
@@ -54,6 +55,9 @@ public:
     // E[h[0])]*(h[i] - E[h[i]])], where h[i] is the
     // height of the interface at x = i.
 
+    vector<vector<double>> dists;
+
+
     CylinderGraph(int N, int M, int k, int T0);
 
     void initializeGraph();
@@ -66,6 +70,10 @@ public:
     void setBottomRedY();
 
     void MarkovChain(int num_samples, int interval);
+
+    double computeReturnProb(int M, int x);
+
+    void computeReturnDists();
 
     void printGraph();
 

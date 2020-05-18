@@ -129,14 +129,19 @@ int main() {
 // Run with this setup to get 100 samples at same time T = 30 * N * N
     int N = 128;
     int k = 2;
-    int T0 = 30 * N * N;
-
+    int T0 = 50 * N * N;
+//    int T0 = N;
     // arguments: (X, Y, k)
     // := (cylinder width, cylinder height, k value for e^(i k x) eigenfunction)
     CylinderGraph graph(N, N, k, T0);
     graph.initializeGraph();
+    graph.computeReturnDists();
 
+//    graph.computeReturnDists();
 
+//    cout << graph.dists[N / 2 - 1][2] << endl;
+
+//    graph.MarkovChain(1, T0);
 
     graph.MarkovChain(100, T0);
 
@@ -145,7 +150,7 @@ int main() {
     // OPEN FILE
 //
     ofstream myfile1;
-    myfile1.open ("EROSION_DATA/data5/M.txt");
+    myfile1.open ("EROSION_DATA/data2/M.txt");
 
     // write martingale (exp(2 lambda t) Dphi_t) values to file.
     // exp does nothing since we print at time 0
@@ -164,7 +169,7 @@ int main() {
     myfile1.close();
 
     ofstream myfile2;
-    myfile2.open ("EROSION_DATA/data5/MQ.txt");
+    myfile2.open ("EROSION_DATA/data2/MQ.txt");
 
     //     write quad variation values to file
 
@@ -183,7 +188,7 @@ int main() {
 //
 //
     ofstream myfile3;
-    myfile3.open ("EROSION_DATA/data5/Dphi.txt");
+    myfile3.open ("EROSION_DATA/data2/Dphi.txt");
 
 
     // write Dphi values to file
@@ -201,7 +206,7 @@ int main() {
 //
 //
     ofstream myfile4;
-    myfile4.open ("EROSION_DATA/data5/DphiQ.txt");
+    myfile4.open ("EROSION_DATA/data2/DphiQ.txt");
 
     //     write Dphi quad variation values to file
 
@@ -218,7 +223,7 @@ int main() {
     myfile4.close();
 ////
     ofstream myfile5;
-    myfile5.open ("EROSION_DATA/data5/Y.txt");
+    myfile5.open ("EROSION_DATA/data2/Y.txt");
 
     // write Y (= martingale we defined) values to file
 
@@ -237,7 +242,7 @@ int main() {
 ////
 ////
     ofstream myfile6;
-    myfile6.open ("EROSION_DATA/data5/YQ.txt");
+    myfile6.open ("EROSION_DATA/data2/YQ.txt");
 
     //     write Y quad var values to file
 

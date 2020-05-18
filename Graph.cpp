@@ -14,6 +14,8 @@
 
 using namespace std;
 
+const double pi = std::acos(-1);
+
 // x is expected to be within 0 and X-1
 // y is expect to be within 0 and Y-1
 
@@ -27,16 +29,18 @@ CylinderGraph::CylinderGraph(int X, int Y, int k, int T0) {
     CylinderGraph::topBlueY = Y - 1;
     CylinderGraph::bottomRedY = 0;
     CylinderGraph::T0 = T0;
+    CylinderGraph::dists = vector<vector<double>>(X, vector<double>(X, 0));
+
 }
 
 void CylinderGraph::initializeGraph() {
-
-    const double pi = std::acos(-1);
 
     graph = vector<int>(X * Y, BLUE);
     numRed = vector<int>(Y, 0);
     numBlue = vector<int>(Y, X);
     correlations = vector<double>(X,0);
+
+
 
     std::random_device rd;
     std::mt19937 mt(rd());
@@ -77,6 +81,7 @@ void CylinderGraph::initializeGraph() {
 //            }
 //        }
 //    }
+
 
 
 
@@ -132,9 +137,14 @@ std::vector<int> CylinderGraph::randomWalk(
         std::uniform_real_distribution<double>& dist, std::mt19937& mt) {
     int x = startX;
     int y = startY;
+    int i;
+    int M;
+
+    vector<double> d;
 
     char next_neighbor;
     double rand_neighbor;
+    double rand01;
     while (graph[y * X + x] == startColor) {
         rand_neighbor = dist(mt);
         if (y == Y - 1) {
@@ -166,10 +176,39 @@ std::vector<int> CylinderGraph::randomWalk(
         }
 
         if (next_neighbor == 'U') {
-            y++;
+            if (startColor == RED and y >= topBlueY + 1 and y - Y/2 < Y / 4) {
+                M = 3 * Y / 2 - 2 * y - 1;
+                d = dists[M];
+                rand01 = dist(mt);
+                i = 0;
+                double sum = 0;
+                while (rand01 > sum) {
+                    sum = sum + d[i];
+                    i++;
+                }
+                x = (x + i) % X;
+            } else {
+                y++;
+            }
         }
         if (next_neighbor == 'D') {
-            y--;
+            if (startColor == BLUE and y <= bottomRedY-1 and Y/2-y <= Y / 4) {
+                M = y;
+                d = dists[M];
+                rand01 = dist(mt);
+                i = 0;
+                double sum = 0;
+                while (rand01 > sum) {
+                    sum = sum + d[i];
+                    i++;
+                }
+                x = (x + i) % X;
+
+            }
+            else {
+                y--;
+            }
+
         }
         if (next_neighbor == 'R') {
             x = (x + 1) % X;
@@ -182,7 +221,6 @@ std::vector<int> CylinderGraph::randomWalk(
 }
 
 void CylinderGraph::MarkovChain(int num_samples, int interval) {
-    const double pi = std::acos(-1);
     const std::complex<double> I(0, 1);
     double N = (double) X;
 
@@ -318,7 +356,7 @@ void CylinderGraph::MarkovChain(int num_samples, int interval) {
             Yt = Yt +
                  (    cos((2 * pi * bdest[0] * k) / N) * (Ablue * exp(q * (bdest[1] - Y / 2) / N)
                                                           + Bblue * exp(-q * (bdest[1] - Y / 2) / N) )
-                      + cos(2 * pi * rdest[0] * k / N) *
+                      - cos(2 * pi * rdest[0] * k / N) *
                         (Ared * exp(q * (rdest[1] - Y / 2) / N) + Bred * exp(-q * (rdest[1] - Y / 2) / N ))  )
                  * exp(2 * lambda * (T - T0) / (N*N)) / N;
 
@@ -408,6 +446,30 @@ int CylinderGraph::h(int x) {
     }
 
     return red_interface;
+}
+
+double CylinderGraph::computeReturnProb(int M, int x) {
+    const double pi = std::acos(-1);
+    double N = (double) X;
+    double Z = 1.0/4 * (2 * M + 1) * N;
+    double S = 0;
+    for (int k = 0; k < N; k++) {
+        for (int m = 0; m < M; m++) {
+            S += 1/(4 - 2 * cos(2 * pi * k / N) - 2 * cos(pi * (m + 1.0/2)/(M + 1.0/2))) *
+                    cos(2 * pi * k * x / N) *
+                            (- cos(2 * pi * (m + 1.0/2)/(M + 1.0/2)) + 1)/2;
+        }
+    }
+    S = S / Z;
+    return S;
+}
+
+void CylinderGraph::computeReturnDists() {
+    for (int M = X / 4; M < Y / 2; M++) {
+        for (int x = 0; x < X; x++) {
+            dists[M][x] = computeReturnProb(M, x);
+        }
+    }
 }
 
 void CylinderGraph::printDensityGraph(int scale) {
